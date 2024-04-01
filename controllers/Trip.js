@@ -1,0 +1,95 @@
+const Trip = require('../models/Trip');
+const ErrorResponse = require("../utils/errorResponse");
+
+// Controller function to create a new trip
+exports.createTrip = async (req, res, next) => {
+    try {
+        const trip = new Trip(req.body);
+        await trip.save();
+        res.status(201).json(trip);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Controller function to get a single trip by ID
+exports.getTripById = async (req, res, next) => {
+    try {
+        const trip = await Trip.findById(req.params.id)
+        .populate('placesToVisit')
+        .populate('tripCreator')
+        .populate('collaborators');
+        if (!trip) {
+            return next(new ErrorResponse("No trip found !", 404));
+        }
+        res.status(200).json(trip);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Controller function to update a trip by ID
+exports.updateTrip = async (req, res, next) => {
+    try {
+        const trip = await Trip.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!trip) {
+            return next(new ErrorResponse("No trip found !", 404));
+        }
+        res.status(201).json(trip);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Controller function to delete a trip by ID
+exports.deleteTrip = async (req, res, next) => {
+    try {
+        const trip = await Trip.findByIdAndDelete(req.params.id);
+        if (!trip) {
+            return next(new ErrorResponse("No trip found !", 404));
+        }
+        res.status(200).json({ message: 'Trip deleted successfully' });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Controller function to get all trips for a current user
+exports.getAllTripsForCurrentUser = async (req, res, next) => {
+    const userId = req.user.id; // Assuming you have access to the user's ID through authentication
+
+    try {
+        const trips = await Trip.find({ tripCreator: userId })
+        .populate('placesToVisit')
+        .populate('tripCreator')
+        .populate('collaborators');
+        if (!trips) {
+            return next(new ErrorResponse("No trips found !", 404));
+        }
+        res.status(200).json(trips);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Controller function to find all trips where a person is added as a collaborator
+exports.getTripsByCollaborator = async (req, res, next) => {
+    try {
+        const collaboratorId = req.user.id; 
+
+        // Find trips where any of the collaboratorIds exist in the collaborators array
+        const trips = await Trip.find({ collaborators: collaboratorId  })
+        .populate('placesToVisit')
+        .populate('tripCreator')
+        .populate('collaborators');
+       
+        if (!trips || trips == []) {
+            return next(new ErrorResponse("No trips found !", 404));
+        }
+
+        res.status(200).json(trips);
+    } catch (error) {
+        next(error);
+    }
+};
+
