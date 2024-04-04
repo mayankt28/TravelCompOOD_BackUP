@@ -6,7 +6,8 @@ const { createTrip,
         updateTrip,
         deleteTrip,
         getAllTripsForCurrentUser,
-        getTripsByCollaborator
+        getTripsByCollaborator,
+        downloadTripDataAsPDF
     } = require('../controllers/Trip');
 
 const { protect } = require('../middleware/auth');
@@ -17,6 +18,7 @@ router.route('/updateTrip/:id').put(protect, updateTrip);
 router.route('/deleteTrip/:id').delete(protect, deleteTrip);
 router.route('/getAllTripsForCurrentUser').get(protect, getAllTripsForCurrentUser);
 router.route('/getTripsByCollaborator').get(protect, getTripsByCollaborator);
+router.route('/downloadTripDataAsPDF/:tripId').get(protect, downloadTripDataAsPDF);
 
 module.exports = router;
 

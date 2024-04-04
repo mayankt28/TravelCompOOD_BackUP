@@ -1,5 +1,6 @@
 const Trip = require('../models/Trip');
 const ErrorResponse = require("../utils/errorResponse");
+const pdfKit = require('pdfkit');
 
 // Controller function to create a new trip
 exports.createTrip = async (req, res, next) => {
@@ -93,3 +94,54 @@ exports.getTripsByCollaborator = async (req, res, next) => {
     }
 };
 
+// Function to download trip data as PDF for a single trip
+exports.downloadTripDataAsPDF = async (req, res) => {
+    try {
+      // Retrieve the trip ID from request parameters
+      const tripId = req.params.tripId;
+  
+      // Query the database to find the trip by its ID
+      const trip = await Trip.findById(tripId).populate('placesToVisit');
+  
+      // If trip is not found, return an error response
+      if (!trip) {
+        return res.status(404).json({ message: 'Trip not found' });
+      }
+  
+      // Create a new PDF document
+      const doc = new pdfKit();
+  
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="trip_data.pdf"');
+  
+      // Pipe PDF document to response stream
+      doc.pipe(res);
+  
+      // Add trip data to PDF
+      doc.fontSize(16).text(`Trip Information`, { underline: true });
+      doc.fontSize(12).text(`Budget: ${trip.budget}`);
+      doc.fontSize(12).text(`Trip Date: ${trip.tripDate}`);
+      doc.moveDown();
+  
+      // Add destination data to PDF
+      doc.fontSize(16).text(`Destinations`, { underline: true });
+      trip.placesToVisit.forEach((destination, index) => {
+        doc.fontSize(12).text(`Destination ${index + 1}`);
+        doc.fontSize(12).text(`Name: ${destination.Name}`);
+        doc.fontSize(12).text(`City: ${destination.City}`);
+        doc.fontSize(12).text(`Time Needed To Visit: ${destination.TimeNeededToVisit} hrs`);
+        doc.fontSize(12).text(`Google Review Rating: ${destination.GoogleReviewRating}`);
+        // Add more destination data as needed
+        doc.moveDown();
+      });
+  
+      // Finalize PDF document
+      doc.end();
+    } catch (error) {
+      // Handle errors
+      console.error('Error downloading trip data as PDF:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+  
