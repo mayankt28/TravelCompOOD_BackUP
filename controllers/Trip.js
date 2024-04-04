@@ -1,4 +1,5 @@
 const Trip = require('../models/Trip');
+const User = require('../models/User');
 const ErrorResponse = require("../utils/errorResponse");
 const pdfKit = require('pdfkit');
 
@@ -144,4 +145,46 @@ exports.downloadTripDataAsPDF = async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   };
+
+
+// Function to add a user as a collaborator to the current trip
+exports.addUserAsCollaborator = async (req, res, next) => {
+  try {
+    // Retrieve the trip ID from request parameters
+    const tripId = req.params.tripId;
+    
+    // Retrieve the email of the user to be added as collaborator from request parameters
+    const userEmail = req.query.email;
+
+    // Search for the user with the provided email in the database
+    const user = await User.findOne({ email: userEmail });
+
+    // If user is not found, throw an error
+    if (!user) {
+      return next(new ErrorResponse("User Not registered", 404));
+    }
+
+    // Find the trip by its ID
+    const trip = await Trip.findById(tripId);
+
+    // If trip is not found, throw an error
+    if (!trip) {
+      return next(new ErrorResponse("No Trip Found", 404));
+    }
+
+    // Add the user's ID to the trip's collaborators array if not already added
+    if (!trip.collaborators.includes(user._id)) {
+      trip.collaborators.push(user._id);
+      await trip.save();
+    }
+
+    // Send success response
+    res.status(200).json({ message: 'User added as a collaborator successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
   
